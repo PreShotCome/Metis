@@ -59,6 +59,8 @@ class NotificationService {
       tz.TZDateTime.from(r.dueAt, tz.local),
       _details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 
