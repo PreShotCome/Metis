@@ -16,8 +16,8 @@
 #   FIREBASE_SERVICE_ACCOUNT  full JSON of a Firebase service account key
 #   FIREBASE_TESTERS          comma-separated tester emails
 #
-# The generated Android applicationId is com.metis.metis — use that exact
-# string as the package name when adding the Android app in Firebase.
+# The APK applicationId is patched to com.metis.app to match the Firebase
+# Android app's package name.
 
 name: Build & Distribute Metis APK
 
@@ -82,6 +82,8 @@ jobs:
           sed -i 's|ndkVersion = .*|ndkVersion = "27.0.12077973"|' "$GRADLE"
           # minSdk 23 required by flutter_foreground_task
           sed -i 's|minSdk = .*|minSdk = 23|' "$GRADLE"
+          # applicationId must match the Firebase Android app's package name
+          sed -i 's|applicationId = .*|applicationId = "com.metis.app"|' "$GRADLE"
           # Core library desugaring required by flutter_local_notifications
           sed -i 's|compileOptions {|compileOptions {\n        isCoreLibraryDesugaringEnabled = true|' "$GRADLE"
           printf '\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n}\n' >> "$GRADLE"
