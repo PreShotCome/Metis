@@ -68,11 +68,23 @@ jobs:
 
       - name: Sign APK with release keystore
         env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > metis.jks
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > metis.jks
+          echo "Decoded keystore size: $(wc -c < metis.jks) bytes"
+          if [ ! -s metis.jks ]; then
+            echo "ERROR: the KEYSTORE_BASE64 secret is empty or missing."
+            echo "Add it under Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          if ! keytool -list -keystore metis.jks -storepass "$KEY_STORE_PASSWORD" >/dev/null 2>&1; then
+            echo "ERROR: keystore could not be opened."
+            echo "KEYSTORE_BASE64 is corrupt or KEY_STORE_PASSWORD is wrong."
+            exit 1
+          fi
           APK=build/app/outputs/flutter-apk/app-release.apk
           BT=$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)
           "$ANDROID_HOME/build-tools/$BT/apksigner" sign \
