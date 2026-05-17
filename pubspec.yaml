@@ -1,0 +1,45 @@
+name: metis
+description: Metis — always listening, never forgetting. An AI-assisted reminder companion.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Networking (optional Claude API parsing)
+  http: ^1.2.2
+
+  # Local storage
+  sqflite: ^2.3.3
+  path: ^1.9.0
+  shared_preferences: ^2.2.3
+
+  # Reminders & notifications
+  flutter_local_notifications: ^17.2.3
+  timezone: ^0.9.4
+  flutter_timezone: ^3.0.1
+
+  # Always-on capture
+  flutter_foreground_task: ^6.5.0
+  speech_to_text: ^6.6.2
+  permission_handler: ^11.3.1
+
+  # Gmail scanning
+  google_sign_in: ^6.2.1
+  googleapis: ^13.2.0
+  extension_google_sign_in_as_googleapis_auth: ^2.0.12
+
+  # Formatting
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
