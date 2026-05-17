@@ -47,15 +47,16 @@ jobs:
       - name: Generate Android project
         run: flutter create --platforms=android --org com.metis .
 
-      - name: Pin Android NDK version
+      - name: Patch Android build config
         run: |
           GRADLE=android/app/build.gradle.kts
-          if grep -q 'ndkVersion' "$GRADLE"; then
-            sed -i 's|ndkVersion = .*|ndkVersion = "27.0.12077973"|' "$GRADLE"
-          else
-            sed -i 's|compileSdk = flutter.compileSdkVersion|compileSdk = flutter.compileSdkVersion\n    ndkVersion = "27.0.12077973"|' "$GRADLE"
-          fi
-          grep -n ndkVersion "$GRADLE"
+          # NDK version required by the plugins
+          sed -i 's|ndkVersion = .*|ndkVersion = "27.0.12077973"|' "$GRADLE"
+          # Core library desugaring required by flutter_local_notifications
+          sed -i 's|compileOptions {|compileOptions {\n        isCoreLibraryDesugaringEnabled = true|' "$GRADLE"
+          printf '\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n}\n' >> "$GRADLE"
+          echo '----- android/app/build.gradle.kts -----'
+          cat "$GRADLE"
 
       - name: Install dependencies
         run: flutter pub get
