@@ -1,0 +1,72 @@
+# Builds a signed Metis release APK and ships it to testers via
+# Firebase App Distribution. Distribution-only — the app itself uses no
+# Firebase SDK and needs no google-services.json.
+#
+# Required GitHub repo secrets (Settings -> Secrets and variables -> Actions):
+#   KEYSTORE_BASE64        base64 of your metis.jks signing keystore
+#   KEY_STORE_PASSWORD     keystore password
+#   KEY_ALIAS              signing key alias
+#   KEY_PASSWORD           password for that key alias
+#   FIREBASE_APP_ID        Firebase Android App ID (1:NNN:android:XXXX)
+#   FIREBASE_SERVICE_ACCOUNT  full JSON of a Firebase service account key
+#   FIREBASE_TESTERS       comma-separated tester emails
+#
+# Prerequisite: the android/ folder must be committed (run `flutter create .`
+# once locally) with a `release` signingConfig in android/app/build.gradle
+# that reads KEY_ALIAS / KEY_PASSWORD / KEY_STORE_PASSWORD from the
+# environment and uses storeFile file("metis.jks").
+
+name: Build & Distribute Metis APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.3'
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Decode signing keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/metis.jks
+
+      - name: Build release APK
+        env:
+          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+          KEY_PASSWORD:       ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS:          ${{ secrets.KEY_ALIAS }}
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Metis-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+      - name: Distribute to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          testers: ${{ secrets.FIREBASE_TESTERS }}
+          file: build/app/outputs/flutter-apk/app-release.apk
+          releaseNotes: "Metis — always listening, never forgetting. | ${{ github.sha }}"
