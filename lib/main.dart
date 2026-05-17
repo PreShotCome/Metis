@@ -13,7 +13,6 @@ import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  FlutterForegroundTask.initCommunicationPort();
 
   await settings.load();
   await NotificationService.init();

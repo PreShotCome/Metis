@@ -47,6 +47,16 @@ jobs:
       - name: Generate Android project
         run: flutter create --platforms=android --org com.metis .
 
+      - name: Pin Android NDK version
+        run: |
+          GRADLE=android/app/build.gradle.kts
+          if grep -q 'ndkVersion' "$GRADLE"; then
+            sed -i 's|ndkVersion = .*|ndkVersion = "27.0.12077973"|' "$GRADLE"
+          else
+            sed -i 's|compileSdk = flutter.compileSdkVersion|compileSdk = flutter.compileSdkVersion\n    ndkVersion = "27.0.12077973"|' "$GRADLE"
+          fi
+          grep -n ndkVersion "$GRADLE"
+
       - name: Install dependencies
         run: flutter pub get
 
