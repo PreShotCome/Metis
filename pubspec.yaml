@@ -25,7 +25,7 @@ dependencies:
 
   # Always-on capture
   flutter_foreground_task: ^6.5.0
-  speech_to_text: ^6.6.2
+  speech_to_text: ^7.0.0
   permission_handler: ^11.3.1
 
   # Gmail scanning
