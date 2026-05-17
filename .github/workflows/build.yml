@@ -52,6 +52,8 @@ jobs:
           GRADLE=android/app/build.gradle.kts
           # NDK version required by the plugins
           sed -i 's|ndkVersion = .*|ndkVersion = "27.0.12077973"|' "$GRADLE"
+          # minSdk 23 required by flutter_foreground_task
+          sed -i 's|minSdk = .*|minSdk = 23|' "$GRADLE"
           # Core library desugaring required by flutter_local_notifications
           sed -i 's|compileOptions {|compileOptions {\n        isCoreLibraryDesugaringEnabled = true|' "$GRADLE"
           printf '\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n}\n' >> "$GRADLE"
