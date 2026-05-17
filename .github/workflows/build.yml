@@ -6,7 +6,8 @@
 # signs the APK with your release keystore. You do NOT need Flutter or
 # Android Studio installed locally — only the repo secrets below.
 #
-# Required GitHub repo secrets (Settings -> Secrets and variables -> Actions):
+# Required GitHub repo secrets (Settings -> Secrets and variables -> Actions
+# -> Secrets tab; NOT the Variables tab):
 #   KEYSTORE_BASE64           base64 of your metis.jks signing keystore
 #   KEY_STORE_PASSWORD        keystore password
 #   KEY_ALIAS                 signing key alias
@@ -31,6 +32,33 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Check required secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_TESTERS: ${{ secrets.FIREBASE_TESTERS }}
+        run: |
+          ok=1
+          for s in KEYSTORE_BASE64 KEY_STORE_PASSWORD KEY_ALIAS KEY_PASSWORD FIREBASE_APP_ID FIREBASE_SERVICE_ACCOUNT FIREBASE_TESTERS; do
+            v="${!s}"
+            if [ -n "$v" ]; then
+              echo "OK       $s  (${#v} chars)"
+            else
+              echo "MISSING  $s"
+              ok=0
+            fi
+          done
+          if [ "$ok" != 1 ]; then
+            echo ""
+            echo "One or more required secrets are not set (or are named differently)."
+            echo "Add them under: Settings -> Secrets and variables -> Actions -> Secrets tab."
+            exit 1
+          fi
 
       - name: Set up Java
         uses: actions/setup-java@v4
