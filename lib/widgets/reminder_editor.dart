@@ -43,6 +43,7 @@ class _EditorSheetState extends State<_EditorSheet> {
   late DateTime _due;
   late bool _hasTime;
   bool _saving = false;
+  String? _error;
 
   bool get _isEdit => widget.existing != null;
   bool get _unresolved => widget.draft != null && !widget.draft!.resolved;
@@ -97,12 +98,13 @@ class _EditorSheetState extends State<_EditorSheet> {
   Future<void> _save() async {
     final title = _title.text.trim();
     if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Give the reminder a title.')),
-      );
+      setState(() => _error = 'Give the reminder a title.');
       return;
     }
-    setState(() => _saving = true);
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
     try {
       final Reminder result;
       if (_isEdit) {
@@ -124,12 +126,13 @@ class _EditorSheetState extends State<_EditorSheet> {
         ));
       }
       if (mounted) Navigator.pop(context, result);
-    } catch (e) {
+    } catch (e, st) {
+      // Surface the real failure in the sheet so it cannot be missed.
       if (mounted) {
-        setState(() => _saving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not save: $e')),
-        );
+        setState(() {
+          _saving = false;
+          _error = '$e\n\n$st';
+        });
       }
     }
   }
@@ -192,6 +195,23 @@ class _EditorSheetState extends State<_EditorSheet> {
               ),
             ],
           ),
+          if (_error != null) ...[
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: MC.red.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: MC.red),
+              ),
+              child: SelectableText(
+                _error!,
+                style: const TextStyle(
+                    color: MC.red, fontSize: 11, height: 1.4),
+              ),
+            ),
+          ],
           const SizedBox(height: 18),
           SizedBox(
             width: double.infinity,

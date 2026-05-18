@@ -14,13 +14,11 @@ class RemindersScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('METIS'),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 16),
-            child: Center(
-              child: Text('always listening',
-                  style: TextStyle(color: MC.muted, fontSize: 10)),
-            ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'New reminder',
+            onPressed: () => showReminderEditor(context),
           ),
         ],
       ),
@@ -40,7 +38,7 @@ class RemindersScreen extends StatelessWidget {
                     icon: Icons.notifications_none,
                     title: 'Nothing scheduled',
                     subtitle:
-                        'Tap CAPTURE to record a reminder by voice, or long-press it to type one.',
+                        'Tap + at the top to add a reminder, or use CAPTURE to record one by voice.',
                   ),
                 )
               else
