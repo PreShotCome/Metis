@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/foreground_service.dart';
 import '../services/gmail_service.dart';
+import '../services/notification_service.dart';
+import '../services/reminder_repository.dart';
 import '../services/settings_store.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
@@ -13,17 +15,40 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  // Curated timezone list. The map value is the label shown to the user.
+  static const _zones = <String, String>{
+    'America/Los_Angeles': 'Pacific — Los Angeles (PST/PDT)',
+    'America/Denver': 'Mountain — Denver (MST/MDT)',
+    'America/Phoenix': 'Arizona — Phoenix (no DST)',
+    'America/Chicago': 'Central — Chicago (CST/CDT)',
+    'America/New_York': 'Eastern — New York (EST/EDT)',
+    'America/Anchorage': 'Alaska — Anchorage',
+    'Pacific/Honolulu': 'Hawaii — Honolulu',
+    'America/Toronto': 'Eastern — Toronto',
+    'America/Mexico_City': 'Mexico City',
+    'Europe/London': 'London (GMT/BST)',
+    'Europe/Paris': 'Central Europe — Paris',
+    'Europe/Berlin': 'Central Europe — Berlin',
+    'Asia/Tokyo': 'Tokyo',
+    'Australia/Sydney': 'Sydney',
+    'UTC': 'UTC',
+  };
+
   late final TextEditingController _keyCtrl;
   late final TextEditingController _modelCtrl;
   bool _foreground = settings.foregroundEnabled;
   bool _claudeEnabled = settings.claudeEnabled;
   bool _obscureKey = true;
+  late String _tz;
 
   @override
   void initState() {
     super.initState();
     _keyCtrl = TextEditingController(text: settings.claudeApiKey);
     _modelCtrl = TextEditingController(text: settings.claudeModel);
+    _tz = settings.timezone.isNotEmpty
+        ? settings.timezone
+        : NotificationService.currentZone;
   }
 
   @override
@@ -40,6 +65,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await ForegroundService.start();
     } else {
       await ForegroundService.stop();
+    }
+  }
+
+  Future<void> _changeTimezone(String zone) async {
+    setState(() => _tz = zone);
+    await settings.setTimezone(zone);
+    NotificationService.applyTimezone(zone);
+    // Re-schedule pending reminders against the new zone.
+    for (final r in reminders.pending) {
+      await NotificationService.schedule(r);
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Timezone set to $zone')),
+      );
     }
   }
 
@@ -62,6 +102,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
+          SectionLabel('Timezone'),
+          MCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Reminders are scheduled in this timezone. Set it to '
+                  'wherever you are so a 5pm reminder fires at your 5pm.',
+                  style: TextStyle(color: MC.muted, fontSize: 12, height: 1.5),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: MC.surface,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: MC.border),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _zoneItems().contains(_tz) ? _tz : null,
+                      isExpanded: true,
+                      dropdownColor: MC.surface,
+                      iconEnabledColor: MC.cyan,
+                      style: const TextStyle(color: MC.text, fontSize: 13),
+                      hint: const Text('Select timezone',
+                          style: TextStyle(color: MC.muted, fontSize: 13)),
+                      items: [
+                        for (final z in _zoneItems())
+                          DropdownMenuItem(
+                            value: z,
+                            child: Text(_zones[z] ?? z,
+                                overflow: TextOverflow.ellipsis),
+                          ),
+                      ],
+                      onChanged: (z) {
+                        if (z != null) _changeTimezone(z);
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
           SectionLabel('Capture'),
           MCard(
             child: SwitchListTile(
@@ -161,7 +246,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Text(
                     GmailService.isSignedIn
                         ? 'Gmail connected — scan from the Email tab.'
-                        : 'Gmail not connected. Connect it in the Email tab.',
+                        : 'Connect an email account from the Email tab.',
                     style: const TextStyle(color: MC.muted, fontSize: 12),
                   ),
                 ),
@@ -201,6 +286,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  // Zone keys, ensuring the currently-active zone is always selectable.
+  List<String> _zoneItems() {
+    final items = _zones.keys.toList();
+    if (!items.contains(_tz)) items.insert(0, _tz);
+    return items;
   }
 
   Widget _label(String text) => Padding(

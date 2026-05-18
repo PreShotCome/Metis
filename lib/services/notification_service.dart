@@ -3,6 +3,7 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 import '../models/reminder.dart';
+import 'settings_store.dart';
 
 /// Schedules and cancels local notifications for reminders. Each reminder's
 /// database id doubles as its notification id. Every method is best-effort
@@ -24,12 +25,7 @@ class NotificationService {
 
   static Future<void> init() async {
     tzdata.initializeTimeZones();
-    try {
-      tz.setLocalLocation(
-          tz.getLocation(await FlutterTimezone.getLocalTimezone()));
-    } catch (_) {
-      // Fall back to whatever timezone defaults to.
-    }
+    await _resolveTimezone();
     try {
       await _plugin.initialize(const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
@@ -47,6 +43,34 @@ class NotificationService {
       _ready = false;
     }
   }
+
+  /// Picks the timezone all reminders schedule against: the user's explicit
+  /// choice if set, otherwise the device's detected zone.
+  static Future<void> _resolveTimezone() async {
+    if (settings.timezone.isNotEmpty && applyTimezone(settings.timezone)) {
+      return;
+    }
+    try {
+      final detected = await FlutterTimezone.getLocalTimezone();
+      applyTimezone(detected);
+    } catch (_) {
+      // Leaves tz.local at its default; reminders still fire at the
+      // correct absolute instant.
+    }
+  }
+
+  /// Sets the active timezone by IANA name. Returns false if unknown.
+  static bool applyTimezone(String name) {
+    try {
+      tz.setLocalLocation(tz.getLocation(name));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// The IANA name of the timezone currently in effect.
+  static String get currentZone => tz.local.name;
 
   /// Best-effort scheduling. Tries an exact alarm, falls back to an inexact
   /// one if exact alarms are not permitted, and never throws.
