@@ -20,12 +20,13 @@ class OutlookDeviceCode {
 /// Read-only Outlook / Microsoft 365 mail access via Microsoft Graph.
 ///
 /// Uses the OAuth device-code flow: no webview, no redirect URIs, no native
-/// config. The user registers an app in Azure (public client, with the
-/// Mail.Read + offline_access delegated permissions) and pastes its
-/// Application (client) ID.
+/// config. Targets a single-tenant Azure app registration (public client,
+/// with the Mail.Read + offline_access delegated permissions).
 class OutlookService {
+  static const _clientId = '42fe2a0e-194c-4022-a0ab-1efa6d4dbeb0';
+  static const _tenantId = 'f3683521-4979-4725-bb64-40828a1c2bb0';
   static const _authority =
-      'https://login.microsoftonline.com/common/oauth2/v2.0';
+      'https://login.microsoftonline.com/$_tenantId/oauth2/v2.0';
   static const _scope = 'offline_access Mail.Read';
 
   static String _accessToken = '';
@@ -35,12 +36,10 @@ class OutlookService {
 
   /// Begins sign-in. Returns the code to show the user, or null on failure.
   static Future<OutlookDeviceCode?> startDeviceLogin() async {
-    final clientId = settings.outlookClientId.trim();
-    if (clientId.isEmpty) return null;
     try {
       final res = await http.post(
         Uri.parse('$_authority/devicecode'),
-        body: {'client_id': clientId, 'scope': _scope},
+        body: {'client_id': _clientId, 'scope': _scope},
       ).timeout(const Duration(seconds: 20));
       if (res.statusCode != 200) return null;
       final j = jsonDecode(res.body) as Map<String, dynamic>;
@@ -57,7 +56,6 @@ class OutlookService {
 
   /// Polls until the user authorizes in their browser. True on success.
   static Future<bool> pollForToken(OutlookDeviceCode code) async {
-    final clientId = settings.outlookClientId.trim();
     final deadline = DateTime.now().add(const Duration(minutes: 10));
     var wait = code.interval;
     while (DateTime.now().isBefore(deadline)) {
@@ -67,7 +65,7 @@ class OutlookService {
           Uri.parse('$_authority/token'),
           body: {
             'grant_type': 'urn:ietf:params:oauth:grant-type:device_code',
-            'client_id': clientId,
+            'client_id': _clientId,
             'device_code': code.deviceCode,
           },
         ).timeout(const Duration(seconds: 20));
@@ -101,7 +99,7 @@ class OutlookService {
         Uri.parse('$_authority/token'),
         body: {
           'grant_type': 'refresh_token',
-          'client_id': settings.outlookClientId.trim(),
+          'client_id': _clientId,
           'refresh_token': refresh,
           'scope': _scope,
         },
