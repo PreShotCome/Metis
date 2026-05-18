@@ -53,14 +53,19 @@ class MCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // IntrinsicHeight gives the row a defined height so the accent strip can
+    // stretch to it; without it the stretch row collapses to zero height
+    // inside a scroll view and the whole card becomes invisible.
     final Widget body = accent == null
         ? Padding(padding: padding, child: child)
-        : Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(width: 3, color: accent),
-              Expanded(child: Padding(padding: padding, child: child)),
-            ],
+        : IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(width: 3, color: accent),
+                Expanded(child: Padding(padding: padding, child: child)),
+              ],
+            ),
           );
 
     final card = Container(
