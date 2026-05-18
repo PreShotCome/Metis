@@ -45,31 +45,33 @@ class ReminderRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  // The database write is what persists a reminder; notifyListeners runs
+  // before scheduling so the UI refreshes even if a notification fails.
   Future<Reminder> add(Reminder r) async {
     r.id = await _db.insert(r);
     _items.add(r);
-    await NotificationService.schedule(r);
     notifyListeners();
+    await NotificationService.schedule(r);
     return r;
   }
 
   Future<void> save(Reminder r) async {
     await _db.update(r);
-    await NotificationService.schedule(r);
     final i = _items.indexWhere((e) => e.id == r.id);
     if (i >= 0) _items[i] = r;
     notifyListeners();
+    await NotificationService.schedule(r);
   }
 
   Future<void> setStatus(Reminder r, ReminderStatus status) async {
     r.status = status;
     await _db.update(r);
+    notifyListeners();
     if (status == ReminderStatus.pending) {
       await NotificationService.schedule(r);
     } else if (r.id != null) {
       await NotificationService.cancel(r.id!);
     }
-    notifyListeners();
   }
 
   Future<void> delete(Reminder r) async {

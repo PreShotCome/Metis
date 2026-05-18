@@ -103,26 +103,35 @@ class _EditorSheetState extends State<_EditorSheet> {
       return;
     }
     setState(() => _saving = true);
-    final Reminder result;
-    if (_isEdit) {
-      final r = widget.existing!
-        ..title = title
-        ..notes = _notes.text.trim()
-        ..dueAt = _due
-        ..hasTime = _hasTime;
-      await reminders.save(r);
-      result = r;
-    } else {
-      result = await reminders.add(Reminder(
-        title: title,
-        notes: _notes.text.trim(),
-        dueAt: _due,
-        hasTime: _hasTime,
-        source: widget.source,
-        rawInput: widget.draft != null ? widget.draft!.title : title,
-      ));
+    try {
+      final Reminder result;
+      if (_isEdit) {
+        final r = widget.existing!
+          ..title = title
+          ..notes = _notes.text.trim()
+          ..dueAt = _due
+          ..hasTime = _hasTime;
+        await reminders.save(r);
+        result = r;
+      } else {
+        result = await reminders.add(Reminder(
+          title: title,
+          notes: _notes.text.trim(),
+          dueAt: _due,
+          hasTime: _hasTime,
+          source: widget.source,
+          rawInput: widget.draft != null ? widget.draft!.title : title,
+        ));
+      }
+      if (mounted) Navigator.pop(context, result);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not save: $e')),
+        );
+      }
     }
-    if (mounted) Navigator.pop(context, result);
   }
 
   @override
