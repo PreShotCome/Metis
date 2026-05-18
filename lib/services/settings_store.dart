@@ -8,6 +8,7 @@ class SettingsStore {
   static const _kClaudeModel    = 'claude_model';
   static const _kForeground     = 'foreground_enabled';
   static const _kGmailScanned   = 'gmail_last_scan';
+  static const _kTimezone       = 'timezone';
 
   String claudeApiKey  = '';
   bool   claudeEnabled = false;
@@ -15,8 +16,12 @@ class SettingsStore {
   bool   foregroundEnabled = true;
   DateTime? gmailLastScan;
 
+  /// IANA timezone name (e.g. America/Los_Angeles). Empty means auto-detect
+  /// from the device.
+  String timezone = '';
+
   /// Claude is only consulted when the user has explicitly enabled it AND
-  /// supplied a key — and even then only as a rare fallback (see ReminderParser).
+  /// supplied a key — and even then only as a rare fallback.
   bool get claudeAvailable => claudeEnabled && claudeApiKey.trim().isNotEmpty;
 
   Future<void> load() async {
@@ -25,6 +30,7 @@ class SettingsStore {
     claudeEnabled     = p.getBool(_kClaudeEnabled) ?? false;
     claudeModel       = p.getString(_kClaudeModel) ?? 'claude-opus-4-7';
     foregroundEnabled = p.getBool(_kForeground) ?? true;
+    timezone          = p.getString(_kTimezone) ?? '';
     final scan = p.getInt(_kGmailScanned);
     gmailLastScan = scan == null
         ? null
@@ -53,6 +59,12 @@ class SettingsStore {
     foregroundEnabled = v;
     final p = await SharedPreferences.getInstance();
     await p.setBool(_kForeground, v);
+  }
+
+  Future<void> setTimezone(String v) async {
+    timezone = v;
+    final p = await SharedPreferences.getInstance();
+    await p.setString(_kTimezone, v);
   }
 
   Future<void> markGmailScanned() async {
