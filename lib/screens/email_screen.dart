@@ -29,21 +29,13 @@ class _EmailScreenState extends State<EmailScreen> {
   final List<_Candidate> _candidates = [];
   int _scanned = 0;
   bool _devicePollOpen = false;
-  late final TextEditingController _clientId;
 
   bool get _outlook => OutlookService.isSignedIn;
 
   @override
   void initState() {
     super.initState();
-    _clientId = TextEditingController(text: settings.outlookClientId);
     _trySilent();
-  }
-
-  @override
-  void dispose() {
-    _clientId.dispose();
-    super.dispose();
   }
 
   Future<void> _trySilent() async {
@@ -71,11 +63,6 @@ class _EmailScreenState extends State<EmailScreen> {
   }
 
   Future<void> _connectOutlook() async {
-    await settings.setOutlookClientId(_clientId.text.trim());
-    if (settings.outlookClientId.isEmpty) {
-      setState(() => _error = 'Paste your Azure app (client) ID first.');
-      return;
-    }
     setState(() {
       _busy = true;
       _error = null;
@@ -85,8 +72,8 @@ class _EmailScreenState extends State<EmailScreen> {
     if (code == null) {
       setState(() {
         _busy = false;
-        _error = 'Could not start Outlook sign-in. Check the client ID and '
-            'that "Allow public client flows" is enabled in Azure.';
+        _error = 'Could not start Outlook sign-in. Make sure "Allow public '
+            'client flows" is enabled in the Azure app registration.';
       });
       return;
     }
@@ -261,30 +248,11 @@ class _EmailScreenState extends State<EmailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Connect Outlook via Microsoft sign-in. Paste the Application '
-            '(client) ID from your Azure app registration.',
+            'Connect Outlook via Microsoft sign-in to scan recent emails '
+            '(read-only) for deadlines and action items.',
             style: TextStyle(color: MC.muted, fontSize: 12, height: 1.5),
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: _clientId,
-            style: const TextStyle(color: MC.text, fontSize: 13),
-            decoration: InputDecoration(
-              hintText: 'Azure client ID',
-              hintStyle: const TextStyle(color: MC.muted, fontSize: 12),
-              filled: true,
-              fillColor: MC.surface,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: MC.border)),
-              focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: MC.cyan)),
-            ),
-          ),
-          const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
