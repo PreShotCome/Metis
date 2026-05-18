@@ -1,7 +1,7 @@
 name: metis
 description: Metis — always listening, never forgetting. An AI-assisted reminder companion.
 publish_to: 'none'
-version: 0.1.0+5
+version: 0.1.0+6
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Networking (optional Claude API parsing)
+  # Networking (optional Claude API parsing, Outlook/Graph)
   http: ^1.2.2
 
   # Local storage
